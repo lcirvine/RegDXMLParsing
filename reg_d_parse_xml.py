@@ -1,11 +1,12 @@
 import os
 import sys
 import logging
+import configparser
 import pandas as pd
 import numpy as np
 import xml.etree.ElementTree as ET
 from urllib.request import urlopen
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import defaultdict, OrderedDict
 
 
@@ -21,9 +22,11 @@ logger.info('-' * 100)
 
 class RegDXML:
     def __init__(self):
+        config = configparser.ConfigParser()
+        config.read('reg_d_settings.ini')
+        self.lb_source_file = config['Settings']['SourceFile']
         self.columns_list = []
         self.x_dict = defaultdict(list)
-        self.lb_source_file = 'G:\\Coverage\\Private Debt\\Reg D 2019.xlsx'
         self.sample_size = 250
         self.test_mode = True
 
@@ -62,6 +65,7 @@ class RegDXML:
                 f.write(col + '\n')
 
     def parse_xml(self):
+        """This function parses the XML data and saves it to a dictionary"""
         df = self.read_lb_list()
         if self.test_mode:
             df = df.head(self.sample_size)
@@ -72,7 +76,11 @@ class RegDXML:
             data_xml = ET.parse(urlopen(url))
             root = data_xml.getroot()
             for col in self.columns_list:
+                # the root tag (edgarSubmission/) must be taken out
+                # otherwise, the item will not be found
                 item = data_xml.findall(col.replace(root.tag + '/', '').strip())
+                # some items have a many to one relationship
+                # for those, the text is concatenated into one string
                 if len(item) > 1:
                     item_str = ', \n'.join(map(str, [i.text for i in item]))
                     self.x_dict[col].append(item_str)
@@ -94,6 +102,9 @@ class RegDXML:
         return True
 
     def create_data_frame(self, file_name):
+        """This puts the parsed data into it's final format.
+        The file is saved with the file name passed to the function.
+        The data frame is returned by the function, mainly so that I can log the number of rows added"""
         if self.check_dict():
             df = pd.DataFrame(self.x_dict)
             drop_list = list(df.filter(regex='relatedPersonsList', axis=1))
