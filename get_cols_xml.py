@@ -1,3 +1,4 @@
+import configparser
 import xml.etree.ElementTree as ET
 from urllib.request import urlopen
 from collections import OrderedDict
@@ -5,11 +6,13 @@ from collections import OrderedDict
 
 class XMLColumns:
     def __init__(self):
+        config = configparser.ConfigParser()
+        config.read('reg_d_settings.ini')
+        self.test_url = config['Settings']['TestURL']
+        self.test_file = config['Settings']['TestFile']
         self.columns_list = []
-        self.test_url = 'http://news-http-doc-internal.prod.factset.com/getstory?id=/home/docs/edgar/2019/20190102/0001387845-18-000001-1.xml&e=false&fsp=false&of=raw'
         self.data_url = ET.parse(urlopen(self.test_url))
         self.root_url = self.data_url.getroot()
-        self.test_file = 'C:\\Users\\lirvine\\Documents\\Temp\\loans_wf_files\\tnc_loans_parser_ided_documents_00006B3A_20191219_142115_0eece5bf-6a22-ea11-810e-8cdcd4af21e4.xml'
         self.data_file = ET.parse(self.test_file)
         self.root_file = self.data_file.getroot()
 
